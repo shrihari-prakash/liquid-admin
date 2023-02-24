@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
-import { StyledSelect } from './styles';
+import {
+    useId,
+    Input,
+} from "@fluentui/react-components";
+import * as React from "react";
+
+import { PersonRegular } from "@fluentui/react-icons";
+import { StyledOmnibar } from "./styles";
 
 const debounce = (func) => {
     let timer;
@@ -13,52 +19,47 @@ const debounce = (func) => {
     };
 };
 
-const OmniBar = () => {
-    const [results, setResults] = useState([]);
-    const onChange = (value) => {
-        console.log(`selected ${value}`);
+const Omnibar = ({ setResults, setLoading }) => {
+    const beforeId = useId("content-before");
+    const onChange = (event) => {
+        onSearch(event.target.value);
     };
-
     const onSearch = debounce((value) => {
         if (!value) return setResults([]);
         console.log('search:', value);
+        setLoading(true);
         fetch('http://localhost:2000/user/search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer 7e61207bbdd266d1dde62c2b26a9bd5bbae72423'
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
             },
             body: JSON.stringify({ query: value }),
         })
             .then((response) => response.json())
             .then((data) => {
-                const results = data.data.results.map(
-                    (result) => ({
-                        label: `${result.firstName} ${result.lastName} (${result.username})`, value: result._id
-                    })
-                );
+                const results = data.data.results;
                 setResults(results);
             })
             .catch((error) => {
                 console.error('Error:', error);
+            })
+            .finally(() => {
+                setLoading(false);
             });
     });
-    return <div className="search">
-        <StyledSelect
-            showSearch
-            showArrow={false}
-            placeholder="Search"
-            optionFilterProp="children"
-            size="large"
-            style={{ width: 400 }}
-            onChange={onChange}
-            onSearch={onSearch}
-            filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
-            options={results}
-        />
-    </div>
+    return (
+        <StyledOmnibar>
+            <Input
+                contentBefore={<PersonRegular />}
+                id={beforeId}
+                appearance="filled-darker"
+                size="large"
+                placeholder="Search Users"
+                onChange={onChange}
+            />
+        </StyledOmnibar>
+    );
 };
 
-export default OmniBar;
+export default Omnibar;
